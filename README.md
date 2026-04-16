@@ -46,9 +46,9 @@ Login:   admin / Admin@12345
    - Loop video → BLOCKED
    - Screen display → BLOCKED
 
-══════════════════════════════════════════════════
-  DATABASE TABLES:
+
+ ********** DATABASE TABLES **********
   tbl_employees    → emp_code + employee_name
   tbl_face_samples → 10 images per employee
   tbl_attendance   → daily records
-══════════════════════════════════════════════════
+
