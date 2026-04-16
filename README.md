@@ -1,6 +1,4 @@
-╔══════════════════════════════════════════════════╗
-║              face-attendance-system              ║
-╚══════════════════════════════════════════════════╝
+********** face-attendance-system **********
 
 STEP 1 - MySQL Workbench mein run karo:
   CREATE DATABASE face_attendance_db
@@ -24,9 +22,7 @@ STEP 5 - START_SERVER.bat double click karo (roz)
 Browser: http://localhost:8000
 Login:   admin / Admin@12345
 
-══════════════════════════════════════════════════
-      NEW FEATURES IN THIS VERSION:
-══════════════════════════════════════════════════
+********** NEW FEATURES IN THIS VERSION **********
 
 ✅ Add Employee:
    - Form + Camera SAME page par
@@ -51,7 +47,7 @@ Login:   admin / Admin@12345
    - Screen display → BLOCKED
 
 ══════════════════════════════════════════════════
-DATABASE TABLES:
+  DATABASE TABLES:
   tbl_employees    → emp_code + employee_name
   tbl_face_samples → 10 images per employee
   tbl_attendance   → daily records
