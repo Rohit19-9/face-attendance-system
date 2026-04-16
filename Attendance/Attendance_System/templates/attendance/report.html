@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Report{% endblock %}
+{% block page_title %}Attendance Report{% endblock %}
+{% block page_sub %}{{ user.username }}'s employees — {{ report_date|date:"d F Y" }}{% endblock %}
+{% block nr %}active{% endblock %}
+{% block content %}
+<div class="card cp" style="margin-bottom:18px">
+  <form method="get" style="display:flex;gap:11px;flex-wrap:wrap;align-items:flex-end">
+    <div>
+      <label class="fl">Date</label>
+      <input type="date" name="date" class="fc" value="{{ report_date|date:'Y-m-d' }}" style="width:190px">
+    </div>
+    <button type="submit" class="btn btn-blue"><i class="fas fa-search"></i> Filter</button>
+    <a href="{% url 'report' %}" class="btn btn-out"><i class="fas fa-calendar-day"></i> Today</a>
+  </form>
+</div>
+
+<div class="stat-grid" style="margin-bottom:18px">
+  <div class="sc blue"><div class="sc-ico"><i class="fas fa-users"></i></div><div><div class="sc-val" data-count="{{ total }}">0</div><div class="sc-lbl">Total</div></div></div>
+  <div class="sc green"><div class="sc-ico"><i class="fas fa-check"></i></div><div><div class="sc-val" data-count="{{ present }}">0</div><div class="sc-lbl">Present</div></div></div>
+  <div class="sc red"><div class="sc-ico"><i class="fas fa-times"></i></div><div><div class="sc-val" data-count="{{ absent }}">0</div><div class="sc-lbl">Absent</div></div></div>
+  <div class="sc purple"><div class="sc-ico"><i class="fas fa-percent"></i></div>
+    <div><div class="sc-val">{% if total > 0 %}{% widthratio present total 100 %}{% else %}0{% endif %}%</div><div class="sc-lbl">Rate</div></div>
+  </div>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden">
+  <div style="padding:14px 18px;border-bottom:1px solid #F3F4F6;display:flex;justify-content:space-between;align-items:center">
+    <span class="st">{{ report_date|date:"d F Y" }}</span>
+    <span style="font-size:12px;color:#9CA3AF;font-weight:600">{{ records|length }} records</span>
+  </div>
+  <div class="tw">
+    <table class="t">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Check In</th>
+          <th>Check Out</th>
+          <th>Hours</th>
+          <th>Status</th>
+          <th>Confidence</th>
+          <th>Liveness</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in records %}
+        <tr>
+          <td style="color:#9CA3AF;font-size:12px">{{ forloop.counter }}</td>
+          <td><span style="background:#EFF6FF;color:#1E40AF;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:700">{{ r.employee.emp_code }}</span></td>
+          <td>
+            <div style="display:flex;align-items:center;gap:9px">
+              <div class="ava">{{ r.employee.employee_name|slice:":1"|upper }}</div>
+              <span style="font-weight:600;color:#111827">{{ r.employee.employee_name }}</span>
+            </div>
+          </td>
+          <td style="font-size:13px;font-weight:600;color:#3B82F6">
+            {% if r.check_in_time %}{{ r.check_in_time|date:"h:i:s A" }}{% else %}—{% endif %}
+          </td>
+          <td style="font-size:13px;color:#6B7280">
+            {% if r.check_out_time %}{{ r.check_out_time|date:"h:i:s A" }}{% else %}—{% endif %}
+          </td>
+          <td style="font-size:13px;color:#6B7280">{{ r.working_hours }}</td>
+          <td><span class="badge b-present">{{ r.status|upper }}</span></td>
+          <td>
+            <div style="display:flex;align-items:center;gap:7px">
+              <div class="prog" style="width:50px"><div class="prog-f" style="width:{{ r.confidence|floatformat:0 }}%"></div></div>
+              <span style="font-size:12px;font-weight:600;color:#6B7280">{{ r.confidence|floatformat:1 }}%</span>
+            </div>
+          </td>
+          <td>
+            {% if r.liveness_ok %}
+              <span class="badge b-reg"><i class="fas fa-check"></i> Verified</span>
+            {% else %}
+              <span class="badge" style="background:#F3F4F6;color:#6B7280">Manual</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" style="text-align:center;padding:44px;color:#9CA3AF">
+            <i class="fas fa-calendar-times" style="font-size:32px;display:block;margin-bottom:10px;opacity:.25"></i>
+            No records for {{ report_date|date:"d F Y" }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

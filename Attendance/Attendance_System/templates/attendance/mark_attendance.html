@@ -1,0 +1,549 @@
+{% extends 'base.html' %}
+{% block title %}Mark Attendance{% endblock %}
+{% block page_title %}Mark Attendance{% endblock %}
+{% block page_sub %}{{ today|date:"l, d F Y" }} — AI Face Recognition{% endblock %}
+{% block nm %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+/* NO SCROLL */
+.body { overflow: hidden !important; }
+
+/* MAIN GRID */
+.att-grid {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 14px;
+  height: calc(100vh - var(--tbh) - 36px);
+}
+
+/* LEFT COLUMN */
+.left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+/* CAMERA CARD — fills remaining space */
+.cam-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r);
+  box-shadow: var(--sh);
+  padding: 12px;
+  overflow: hidden;
+}
+
+/* Camera box — fits exactly in card */
+.cam-box {
+  flex: 1;
+  position: relative;
+  background: #111827;
+  border-radius: 10px;
+  overflow: hidden;
+  min-height: 0;
+}
+#av {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  display: block;
+}
+#ac { display: none; }
+
+/* Corner brackets */
+.brk {
+  position: absolute; width: 18px; height: 18px;
+  z-index: 3; pointer-events: none;
+}
+.brk::before, .brk::after {
+  content: ''; position: absolute; background: rgba(59,130,246,.8);
+}
+.brk::before { width: 100%; height: 2px; top: 0; }
+.brk::after  { width: 2px; height: 100%; left: 0; }
+.brk.tl { top:10px; left:10px; }
+.brk.tr { top:10px; right:10px; transform: scaleX(-1); }
+.brk.bl { bottom:10px; left:10px; transform: scaleY(-1); }
+.brk.br { bottom:10px; right:10px; transform: scale(-1); }
+
+/* HUD */
+.cam-hud {
+  position: absolute; top:10px; left:50%; transform:translateX(-50%);
+  background: rgba(0,0,0,.65); backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 20px; padding: 4px 14px;
+  font-size: 11.5px; color: #fff; white-space: nowrap; z-index: 5;
+}
+
+/* Liveness message */
+.lv-msg {
+  position: absolute; bottom: 52px; left:12px; right:12px;
+  background: rgba(0,0,0,.65); backdrop-filter: blur(6px);
+  border-radius: 8px; padding: 6px 12px;
+  font-size: 12px; color: #fff; text-align: center; z-index: 5;
+}
+
+/* Processing */
+.proc {
+  position: absolute; inset:0;
+  background: rgba(0,0,0,.65);
+  display: none; align-items: center; justify-content: center;
+  flex-direction: column; gap: 10px; z-index: 10;
+}
+.proc.on { display: flex; }
+.spin-ring {
+  width: 48px; height: 48px; border-radius: 50%;
+  border: 3px solid rgba(59,130,246,.2);
+  border-top-color: #3B82F6;
+  animation: spin .8s linear infinite;
+}
+
+/* Result banner */
+.result-bar {
+  position: absolute; bottom:0; left:0; right:0;
+  padding: 10px 14px;
+  display: none; align-items: center; gap: 10px;
+  z-index: 8;
+  animation: slideUp .3s ease;
+}
+.result-bar.show { display: flex; }
+.result-bar.ok   { background: linear-gradient(135deg,rgba(16,185,129,.95),rgba(5,150,105,.95)); }
+.result-bar.fail { background: linear-gradient(135deg,rgba(239,68,68,.95),rgba(185,28,28,.95)); }
+@keyframes slideUp { from{transform:translateY(100%);opacity:0} to{transform:translateY(0);opacity:1} }
+
+/* Already present overlay */
+.already-ov {
+  position: absolute; inset:0;
+  background: rgba(0,0,0,.82);
+  display: none; align-items: center; justify-content: center;
+  z-index: 12;
+}
+.already-ov.show { display: flex; }
+.already-card {
+  background: #fff; border-radius: 14px;
+  padding: 20px; text-align: center; max-width: 240px; width: 90%;
+}
+
+/* Countdown bar */
+.countdown-bar {
+  position: absolute; bottom:0; left:0; right:0;
+  height: 4px; background: rgba(255,255,255,.15); z-index: 9;
+  display: none;
+}
+.countdown-fill {
+  height: 100%;
+  background: linear-gradient(90deg,#3B82F6,#10B981);
+  transition: width linear;
+}
+
+/* Mode toggle */
+.mode-toggle {
+  display: flex; background: #F3F4F6;
+  border-radius: 8px; padding: 3px; gap: 3px;
+  margin-bottom: 10px; flex-shrink: 0;
+}
+.mode-btn {
+  flex: 1; padding: 7px;
+  background: transparent; border: none;
+  border-radius: 6px; font-size: 12.5px; font-weight: 600;
+  cursor: pointer; transition: all .15s;
+  font-family: 'Inter',sans-serif; color: #6B7280;
+}
+.mode-btn.on {
+  background: #fff; color: #3B82F6;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+
+/* Liveness meter */
+.lv-meter {
+  flex-shrink: 0;
+  padding: 8px 10px;
+  background: #F9FAFB; border: 1px solid #E5E7EB;
+  border-radius: 8px; margin-top: 8px;
+}
+
+/* RIGHT COLUMN */
+.right-col {
+  display: flex; flex-direction: column;
+  gap: 10px; min-height: 0;
+}
+
+/* Stats row */
+.stats-row {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; flex-shrink: 0;
+}
+.stat-mini {
+  background: var(--white); border: 1px solid var(--gray-200);
+  border-radius: var(--r); box-shadow: var(--sh);
+  padding: 12px;
+}
+
+/* Records list */
+.rec-card {
+  flex: 1; min-height: 0;
+  background: var(--white); border: 1px solid var(--gray-200);
+  border-radius: var(--r); box-shadow: var(--sh);
+  padding: 12px;
+  display: flex; flex-direction: column;
+}
+.rec-list {
+  flex: 1; overflow-y: auto; min-height: 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.rec-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 10px;
+  background: #F9FAFB; border-radius: 8px;
+  animation: recIn .3s ease;
+  flex-shrink: 0;
+}
+@keyframes recIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+
+/* Next person countdown */
+.next-overlay {
+  display: none;
+  position: absolute; inset:0;
+  background: rgba(11,17,32,.9);
+  align-items: center; justify-content: center;
+  flex-direction: column; gap: 12px; z-index: 15;
+}
+.next-overlay.show { display: flex; }
+.next-count {
+  font-family: 'Sora',sans-serif;
+  font-size: 56px; font-weight: 800; color: #fff; line-height: 1;
+}
+
+@keyframes spin { to{transform:rotate(360deg)} }
+@media(max-width:900px) { .att-grid { grid-template-columns:1fr; height:auto; } .body{overflow:auto!important} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="att-grid">
+
+  <!-- LEFT: CAMERA -->
+  <div class="left-col">
+    <div class="cam-card">
+
+      <!-- Mode toggle -->
+      <div class="mode-toggle">
+        <button class="mode-btn on" id="btnIn" onclick="setMode('check_in')">
+          <i class="fas fa-sign-in-alt"></i> Check In
+        </button>
+        <button class="mode-btn" id="btnOut" onclick="setMode('check_out')">
+          <i class="fas fa-sign-out-alt"></i> Check Out
+        </button>
+      </div>
+
+      <!-- Camera box -->
+      <div class="cam-box" id="camBox">
+        <video id="av" autoplay muted playsinline></video>
+        <canvas id="ac"></canvas>
+
+        <!-- Corner brackets -->
+        <div class="brk tl"></div><div class="brk tr"></div>
+        <div class="brk bl"></div><div class="brk br"></div>
+
+        <!-- HUD -->
+        <div class="cam-hud" id="camHud">● Starting camera...</div>
+
+        <!-- Liveness message -->
+        <div class="lv-msg" id="lvMsg">Initializing AI...</div>
+
+        <!-- Processing -->
+        <div class="proc" id="proc">
+          <div class="spin-ring"></div>
+          <div style="color:#fff;font-size:12px;font-weight:600">Analyzing...</div>
+        </div>
+
+        <!-- Result banner -->
+        <div class="result-bar" id="resultBar">
+          <div id="resIco" style="font-size:22px"></div>
+          <div>
+            <div id="resName" style="font-size:13px;font-weight:700;color:#fff"></div>
+            <div id="resDetail" style="font-size:11px;color:rgba(255,255,255,.8)"></div>
+          </div>
+        </div>
+
+        <!-- Already present -->
+        <div class="already-ov" id="alreadyOv">
+          <div class="already-card">
+            <div style="font-size:28px;margin-bottom:8px">⚠️</div>
+            <div style="font-family:'Sora',sans-serif;font-size:14px;font-weight:800;color:#111827;margin-bottom:4px" id="alName">-</div>
+            <div style="font-size:11px;font-weight:700;color:#EF4444;margin-bottom:8px">Already Marked Today!</div>
+            <div style="font-size:11px;color:#6B7280">In: <strong id="alIn">-</strong> &nbsp; Out: <strong id="alOut">-</strong></div>
+            <div style="font-size:10px;color:#9CA3AF;margin-top:8px">Next person in <span id="alCount">5</span>s...</div>
+          </div>
+        </div>
+
+        <!-- Next person countdown overlay -->
+        <div class="next-overlay" id="nextOv">
+          <div style="font-size:14px;font-weight:600;color:rgba(255,255,255,.6);margin-bottom:4px">Next person in</div>
+          <div class="next-count" id="nextCount">5</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.4)">seconds</div>
+          <div style="width:180px;height:3px;background:rgba(255,255,255,.1);border-radius:3px;margin-top:10px;overflow:hidden">
+            <div id="nextBar" style="height:100%;background:linear-gradient(90deg,#3B82F6,#10B981);border-radius:3px;width:100%;transition:width 1s linear"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Liveness meter -->
+      <div class="lv-meter">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:.5px">Liveness</span>
+          <span style="font-size:11px;font-weight:700;color:#3B82F6" id="lvPct">0%</span>
+        </div>
+        <div class="prog" style="height:5px">
+          <div class="prog-f" id="lvBar" style="width:0%;background:linear-gradient(90deg,#3B82F6,#10B981)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: RECORDS -->
+  <div class="right-col">
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-mini">
+        <div style="font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.7px;margin-bottom:3px">Present</div>
+        <div style="font-family:'Sora',sans-serif;font-size:26px;font-weight:700;color:#10B981" id="pCount">{{ records|length }}</div>
+      </div>
+      <div class="stat-mini">
+        <div style="font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.7px;margin-bottom:3px">Date</div>
+        <div style="font-size:13px;font-weight:700;color:#3B82F6">{{ today|date:"d M Y" }}</div>
+        <div style="font-size:10px;color:#9CA3AF">{{ today|date:"l" }}</div>
+      </div>
+    </div>
+
+    <!-- Records list -->
+    <div class="rec-card">
+      <div class="sh" style="margin-bottom:10px;flex-shrink:0">
+        <span class="st">Today's Records</span>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:#10B981;font-weight:600">
+          <div class="ld"></div>Live
+        </div>
+      </div>
+      <div class="rec-list" id="recList">
+        {% for r in records %}
+        <div class="rec-item">
+          <div class="ava">{{ r.employee.employee_name|slice:":1"|upper }}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+              {{ r.employee.employee_name }}
+            </div>
+            <div style="font-size:10.5px;color:#9CA3AF">{{ r.employee.emp_code }}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:11.5px;font-weight:600;color:#3B82F6">
+              {% if r.check_in_time %}{{ r.check_in_time|date:"h:i A" }}{% endif %}
+            </div>
+            <span class="badge b-present" style="font-size:10px">IN</span>
+          </div>
+        </div>
+        {% empty %}
+        <div style="text-align:center;padding:24px;color:#9CA3AF" id="emptyMsg">
+          <i class="fas fa-user-clock" style="font-size:26px;display:block;margin-bottom:8px;opacity:.25"></i>
+          No records yet
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let stream=null, active=false, busy=false, mode='check_in';
+const INTERVAL = 1800;
+const WAIT_SEC = 5;
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('btnIn').classList.toggle('on',  m==='check_in');
+  document.getElementById('btnOut').classList.toggle('on', m==='check_out');
+}
+
+// ── AUTO START on page load ───────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  setTimeout(startCam, 600);
+});
+
+async function startCam() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { width:{ideal:1280}, height:{ideal:720}, facingMode:'user' }
+    });
+    const v = document.getElementById('av');
+    v.srcObject = stream;
+    document.getElementById('camHud').textContent   = '● AI Scanning';
+    document.getElementById('camHud').style.color   = '#34D399';
+    document.getElementById('lvMsg').textContent    = '👁️ Look at camera';
+    active = true;
+    loop();
+  } catch(e) {
+    document.getElementById('camHud').textContent = '❌ ' + e.message;
+    document.getElementById('camHud').style.color = '#F87171';
+    document.getElementById('lvMsg').textContent  = 'Camera error — check permissions';
+  }
+}
+
+function stopCam() {
+  active = false;
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  document.getElementById('camHud').textContent = '● Camera Off';
+  document.getElementById('camHud').style.color = '';
+}
+
+async function loop() {
+  if (!active) return;
+  if (!busy) { busy=true; await processFrame(); busy=false; }
+  setTimeout(loop, INTERVAL);
+}
+
+async function processFrame() {
+  const v = document.getElementById('av');
+  if (!v.videoWidth) return;
+
+  const c = document.getElementById('ac');
+  c.width=v.videoWidth; c.height=v.videoHeight;
+  const ctx = c.getContext('2d');
+  ctx.save(); ctx.scale(-1,1); ctx.drawImage(v,-c.width,0,c.width,c.height); ctx.restore();
+  const img = c.toDataURL('image/jpeg', .82);
+
+  document.getElementById('proc').classList.add('on');
+  try {
+    const res = await fetch('/api/attendance/', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'X-CSRFToken':getCookie('csrftoken') },
+      body: JSON.stringify({ image:img, action:mode })
+    });
+    const d = await res.json();
+    document.getElementById('proc').classList.remove('on');
+
+    if (d.ok && d.stage === 'done') {
+      // ── ATTENDANCE MARKED ──
+      updateLv(d.score, '✅ Attendance marked!');
+      showResult('ok', d.action==='check_in'?'✅':'👋', d.name,
+        d.action.replace('_',' ') + ' · ' + d.time + ' · ' + d.conf + '%');
+      addRecord(d);
+      beep();
+      stopCam();
+      startCountdown();
+
+    } else if (d.already) {
+      // ── ALREADY MARKED ──
+      updateLv(0, '⚠️ Already marked today');
+      document.getElementById('alName').textContent = d.name + ' (' + d.code + ')';
+      document.getElementById('alIn').textContent   = d.check_in  || '-';
+      document.getElementById('alOut').textContent  = d.check_out || 'Not yet';
+      document.getElementById('alreadyOv').classList.add('show');
+      stopCam();
+      // Countdown for already-present too
+      let ac = WAIT_SEC;
+      document.getElementById('alCount').textContent = ac;
+      const ti = setInterval(() => {
+        ac--;
+        document.getElementById('alCount').textContent = ac;
+        if (ac <= 0) {
+          clearInterval(ti);
+          document.getElementById('alreadyOv').classList.remove('show');
+          startCam();
+        }
+      }, 1000);
+
+    } else {
+      // ── LIVENESS / RECOGNITION FAILED ──
+      updateLv(d.score||0, d.msg||'Look at camera');
+      if (d.stage === 'recognition') {
+        showResult('fail', '❌', 'Not Recognized', d.msg || 'Not registered');
+        setTimeout(() => document.getElementById('resultBar').classList.remove('show'), 3000);
+      }
+    }
+  } catch(e) {
+    document.getElementById('proc').classList.remove('on');
+  }
+}
+
+// ── 5 SECOND COUNTDOWN then restart ──────────────────────────────────────────
+function startCountdown() {
+  const ov    = document.getElementById('nextOv');
+  const cntEl = document.getElementById('nextCount');
+  const barEl = document.getElementById('nextBar');
+
+  ov.classList.add('show');
+  let sec = WAIT_SEC;
+  cntEl.textContent = sec;
+
+  // Start bar shrink
+  setTimeout(() => { barEl.style.width = '0%'; barEl.style.transition = `width ${WAIT_SEC}s linear`; }, 50);
+
+  const ti = setInterval(() => {
+    sec--;
+    cntEl.textContent = sec;
+    if (sec <= 0) {
+      clearInterval(ti);
+      ov.classList.remove('show');
+      document.getElementById('resultBar').classList.remove('show');
+      // Reset bar for next time
+      barEl.style.transition = 'none';
+      barEl.style.width = '100%';
+      startCam();
+    }
+  }, 1000);
+}
+
+function updateLv(score, msg) {
+  document.getElementById('lvPct').textContent  = Math.round(score) + '%';
+  document.getElementById('lvBar').style.width  = score + '%';
+  document.getElementById('lvMsg').textContent  = msg || '';
+}
+
+function showResult(type, ico, name, detail) {
+  const rb = document.getElementById('resultBar');
+  rb.className = 'result-bar show ' + type;
+  document.getElementById('resIco').textContent    = ico;
+  document.getElementById('resName').textContent   = name;
+  document.getElementById('resDetail').textContent = detail;
+}
+
+function addRecord(d) {
+  document.getElementById('emptyMsg')?.remove();
+  const list = document.getElementById('recList');
+  const el   = document.createElement('div');
+  el.className = 'rec-item';
+  el.innerHTML = `
+    <div class="ava">${d.name[0]}</div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:12.5px;font-weight:600">${d.name}</div>
+      <div style="font-size:10.5px;color:#9CA3AF">${d.code}</div>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <div style="font-size:11.5px;font-weight:600;color:#3B82F6">${d.time}</div>
+      <span class="badge b-present" style="font-size:10px">IN</span>
+    </div>`;
+  list.insertBefore(el, list.firstChild);
+  document.getElementById('pCount').textContent =
+    parseInt(document.getElementById('pCount').textContent) + 1;
+}
+
+function beep() {
+  try {
+    const cx=new(window.AudioContext||window.webkitAudioContext)(),
+          o=cx.createOscillator(), g=cx.createGain();
+    o.connect(g); g.connect(cx.destination);
+    o.frequency.value = 880;
+    g.gain.setValueAtTime(.2, cx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.01, cx.currentTime+.3);
+    o.start(); o.stop(cx.currentTime+.3);
+  } catch(e){}
+}
+</script>
+{% endblock %}

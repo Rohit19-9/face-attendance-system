@@ -1,0 +1,616 @@
+{% extends 'base.html' %}
+{% block title %}Add Employee{% endblock %}
+{% block page_title %}Add Employee{% endblock %}
+{% block page_sub %}Register new employee{% endblock %}
+{% block na %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+/* NO SCROLL */
+.body { overflow: hidden !important; }
+
+/* FORM CENTERED */
+.fc-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(100vh - var(--tbh) - 36px);
+  animation: fadeUp .45s cubic-bezier(.22,1,.36,1);
+}
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(22px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.fc-box {
+  width: 100%;
+  max-width: 420px;
+  animation: scaleIn .5s cubic-bezier(.34,1.56,.64,1) .05s both;
+}
+@keyframes scaleIn {
+  from { opacity:0; transform:scale(.94); }
+  to   { opacity:1; transform:scale(1); }
+}
+
+/* Input animation */
+.fc { transition: border-color .2s, box-shadow .2s, transform .2s !important; }
+.fc:focus {
+  border-color: var(--blue) !important;
+  box-shadow: 0 0 0 4px rgba(59,130,246,.1) !important;
+  transform: translateY(-1px);
+}
+.icon-inp { transition: color .2s; }
+
+/* Save button */
+.sv-btn {
+  position: relative; overflow: hidden;
+  transition: all .25s !important;
+}
+.sv-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 0; height: 0;
+  background: rgba(255,255,255,.15);
+  border-radius: 50%;
+  transform: translate(-50%,-50%);
+  transition: width .4s, height .4s;
+}
+.sv-btn:hover::before { width: 300px; height: 300px; }
+.sv-btn:hover { transform: translateY(-2px) !important; box-shadow: 0 8px 24px rgba(59,130,246,.4) !important; }
+
+/* FULLSCREEN CAMERA OVERLAY */
+#camOv {
+  display: none;
+  position: fixed; inset: 0;
+  background: #080e1a;
+  z-index: 9500;
+  flex-direction: column;
+}
+#camOv.show { display: flex; animation: fadeIn .3s ease; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+/* Top bar */
+.ctop {
+  height: 50px;
+  background: rgba(0,0,0,.55);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px; flex-shrink: 0;
+}
+.cemp-ava {
+  width: 30px; height: 30px; border-radius: 7px;
+  background: linear-gradient(135deg,#3B82F6,#8B5CF6);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: #fff;
+  animation: popIn .4s cubic-bezier(.34,1.56,.64,1) .15s both;
+}
+@keyframes popIn { from{transform:scale(0)} to{transform:scale(1)} }
+
+/* Camera area */
+.cam-area {
+  flex: 1; position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background: #000;
+}
+#cVid { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); display:none; }
+#cCan { display:none; }
+
+/* Face ring */
+.face-ring {
+  position: absolute; top:50%; left:50%;
+  transform: translate(-50%,-50%);
+  width: 200px; height: 200px; border-radius: 50%;
+  border: 2px solid rgba(59,130,246,.85);
+  pointer-events: none; z-index: 2;
+  animation: ringAnim 2.5s ease-in-out infinite;
+}
+@keyframes ringAnim {
+  0%,100% {
+    box-shadow: 0 0 0 8px rgba(59,130,246,.07);
+    border-color: rgba(59,130,246,.85);
+  }
+  50% {
+    box-shadow: 0 0 0 22px rgba(59,130,246,.02);
+    border-color: #3B82F6;
+  }
+}
+
+/* Scan line */
+.scan-line {
+  position: absolute;
+  left: 50%; transform: translateX(-50%);
+  width: 200px; height: 2px;
+  background: linear-gradient(90deg,transparent,rgba(59,130,246,.95),transparent);
+  border-radius: 2px; pointer-events: none; z-index: 3;
+  animation: scanMove 2s ease-in-out infinite;
+}
+@keyframes scanMove {
+  0%   { top: calc(50% - 100px); }
+  50%  { top: calc(50% + 100px); }
+  100% { top: calc(50% - 100px); }
+}
+
+/* HUD */
+.chud {
+  position: absolute; top:12px; left:50%; transform:translateX(-50%);
+  background: rgba(0,0,0,.6); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,.1); border-radius: 20px;
+  padding: 5px 16px; font-size: 12px; color: #fff; white-space: nowrap; z-index: 5;
+}
+
+/* Angle box */
+.angle-box {
+  position: absolute; top:12px; right:12px;
+  background: rgba(0,0,0,.6); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,.07); border-radius: 10px;
+  padding: 8px 12px; text-align: right; z-index: 5; pointer-events: none;
+  animation: slideLeft .4s ease .2s both;
+}
+@keyframes slideLeft { from{opacity:0;transform:translateX(10px)} to{opacity:1;transform:translateX(0)} }
+
+/* Message */
+.cmsg {
+  position: absolute; bottom:84px; left:50%; transform:translateX(-50%);
+  background: rgba(0,0,0,.6); backdrop-filter: blur(8px);
+  border-radius: 8px; padding: 7px 18px;
+  font-size: 13px; color: #fff; white-space: nowrap; z-index: 5;
+  transition: all .3s;
+}
+
+/* Flash */
+.cflash { position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:6; transition:opacity .06s; }
+
+/* Complete button */
+.done-wrap {
+  position: absolute; bottom:84px; left:50%; transform:translateX(-50%);
+  z-index: 7; display: none;
+  animation: btnPop .45s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes btnPop {
+  from { opacity:0; transform:translateX(-50%) scale(.75); }
+  to   { opacity:1; transform:translateX(-50%) scale(1); }
+}
+.done-btn {
+  height: 50px; padding: 0 28px;
+  background: linear-gradient(135deg,#10B981,#34D399);
+  color:#fff; border:none; border-radius:25px;
+  font-size:14px; font-weight:700; cursor:pointer;
+  display:flex; align-items:center; gap:8px;
+  font-family:'Inter',sans-serif;
+  box-shadow: 0 6px 24px rgba(16,185,129,.5);
+  white-space: nowrap; transition: all .25s;
+}
+.done-btn:hover { transform:scale(1.05); box-shadow:0 8px 30px rgba(16,185,129,.6); }
+
+/* Processing */
+.proc-ov {
+  position:absolute; inset:0; background:rgba(0,0,0,.82);
+  display:none; align-items:center; justify-content:center;
+  flex-direction:column; gap:16px; z-index:20;
+}
+.proc-ov.on { display:flex; }
+.proc-ring { width:68px; height:68px; border-radius:50%; border:3px solid rgba(59,130,246,.2); border-top-color:#3B82F6; animation:spin .8s linear infinite; }
+
+/* Bottom controls */
+.cbot {
+  height: 76px;
+  background: rgba(0,0,0,.7);
+  border-top: 1px solid rgba(255,255,255,.06);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 14px; gap: 10px; flex-shrink: 0;
+}
+
+/* Thumbnail strip */
+.tstrip { display:flex; gap:4px; flex:1; overflow:hidden; }
+.th {
+  width:44px; height:44px; border-radius:7px;
+  border:2px dashed rgba(255,255,255,.18);
+  background:rgba(255,255,255,.04);
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700; color:rgba(255,255,255,.3);
+  flex-shrink:0; overflow:hidden; transition:all .2s;
+}
+.th.cur  { border-color:#3B82F6; border-style:solid; color:#3B82F6; animation:thPulse 1s infinite; }
+.th.done { border-color:#10B981; border-style:solid; }
+.th img  { width:100%; height:100%; object-fit:cover; border-radius:5px; }
+.th.pop  { animation:thPop .4s cubic-bezier(.34,1.56,.64,1); }
+@keyframes thPulse { 0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,.4)} 50%{box-shadow:0 0 0 4px rgba(59,130,246,.1)} }
+@keyframes thPop   { 0%{transform:scale(1.3)} 100%{transform:scale(1)} }
+
+/* Capture circle */
+.cap-circle {
+  width:56px; height:56px; border-radius:50%;
+  background:linear-gradient(135deg,#3B82F6,#8B5CF6);
+  border:3px solid rgba(255,255,255,.2);
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  font-size:21px; color:#fff; flex-shrink:0;
+  box-shadow:0 4px 20px rgba(59,130,246,.5); transition:all .2s;
+}
+.cap-circle:hover:not(:disabled) { transform:scale(1.1); box-shadow:0 6px 28px rgba(59,130,246,.7); }
+.cap-circle:active:not(:disabled) { transform:scale(.94); }
+.cap-circle:disabled { opacity:.38; cursor:not-allowed; }
+
+/* Success overlay */
+.succ-ov {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,.65); z-index:9999;
+  align-items:center; justify-content:center;
+  animation:fadeIn .3s ease;
+}
+.succ-card {
+  background:#fff; border-radius:20px; padding:40px 36px;
+  text-align:center; max-width:310px; width:90%;
+  animation:scaleIn .5s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 24px 64px rgba(0,0,0,.25);
+}
+.succ-ico {
+  width:70px; height:70px; background:#ECFDF5; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:30px; color:#10B981; margin:0 auto 16px;
+  animation:icoPop .5s cubic-bezier(.34,1.56,.64,1) .1s both;
+}
+@keyframes icoPop { from{transform:scale(0) rotate(-15deg)} to{transform:scale(1) rotate(0)} }
+@keyframes spin   { to{transform:rotate(360deg)} }
+@keyframes shake  { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-6px)} 40%,80%{transform:translateX(6px)} }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- STEP 1: Form (centered) -->
+<div class="fc-wrap" id="formSec">
+  <div class="fc-box">
+    <div class="card cp">
+      <div class="sh" style="margin-bottom:20px">
+        <span class="st">Employee Details</span>
+        <a href="{% url 'employee_list' %}" class="btn btn-out btn-sm">
+          <i class="fas fa-arrow-left"></i> Back
+        </a>
+      </div>
+
+      <div class="fg">
+        <label class="fl">Employee Code <span style="color:#EF4444">*</span></label>
+        <div style="position:relative">
+          <i class="fas fa-id-badge icon-inp" id="ico1"
+             style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#9CA3AF;font-size:13px"></i>
+          <input type="text" id="fCode" class="fc"
+                 placeholder="e.g. EMP001"
+                 style="padding-left:36px;font-size:15px;font-weight:600;text-transform:uppercase;letter-spacing:.5px"
+                 oninput="this.value=this.value.toUpperCase()"
+                 onfocus="document.getElementById('ico1').style.color='#3B82F6'"
+                 onblur="document.getElementById('ico1').style.color='#9CA3AF'">
+        </div>
+        <div style="font-size:11px;color:#9CA3AF;margin-top:3px">Unique in your account only.</div>
+      </div>
+
+      <div class="fg">
+        <label class="fl">Employee Name <span style="color:#EF4444">*</span></label>
+        <div style="position:relative">
+          <i class="fas fa-user icon-inp" id="ico2"
+             style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#9CA3AF;font-size:13px"></i>
+          <input type="text" id="fName" class="fc"
+                 placeholder="Full name"
+                 style="padding-left:36px;font-size:15px"
+                 onfocus="document.getElementById('ico2').style.color='#3B82F6'"
+                 onblur="document.getElementById('ico2').style.color='#9CA3AF'">
+        </div>
+      </div>
+
+      <div id="errBox" style="display:none" class="alert a-err">
+        <i class="fas fa-exclamation-circle"></i>
+        <span id="errMsg"></span>
+      </div>
+
+      <div style="background:#EFF6FF;border-radius:9px;padding:11px 14px;margin-bottom:16px;display:flex;gap:9px">
+        <i class="fas fa-camera" style="color:#3B82F6;margin-top:1px;flex-shrink:0"></i>
+        <div style="font-size:12px;color:#1E40AF;line-height:1.5">
+          Camera opens fullscreen. Capture <strong>10 face samples</strong>. Employee saves to database only after registration completes.
+        </div>
+      </div>
+
+      <button onclick="onSave()" id="svBtn" class="btn btn-blue btn-lg sv-btn"
+              style="width:100%;justify-content:center;font-size:14.5px">
+        <i class="fas fa-camera"></i> Save & Start Camera
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- STEP 2: Fullscreen camera -->
+<div id="camOv">
+  <!-- Top bar -->
+  <div class="ctop">
+    <div style="display:flex;align-items:center;gap:9px">
+      <div class="cemp-ava" id="empAva">?</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#fff" id="empNm">-</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.4)" id="empCd">-</div>
+      </div>
+    </div>
+    <button onclick="onCancel()" class="btn btn-out btn-sm" style="font-size:11px">
+      <i class="fas fa-times"></i> Cancel
+    </button>
+  </div>
+
+  <!-- Camera area -->
+  <div class="cam-area">
+    <video id="cVid" autoplay muted playsinline></video>
+    <canvas id="cCan"></canvas>
+    <div class="face-ring"></div>
+    <div class="scan-line" id="scanLine"></div>
+    <div class="cflash" id="cFlash"></div>
+    <div class="chud" id="cHud">Initializing...</div>
+    <div class="angle-box">
+      <div style="font-size:9px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">Angle</div>
+      <div style="font-size:13px;font-weight:700;color:#60A5FA" id="angN">FRONT</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px" id="angH">Look at camera</div>
+    </div>
+    <div class="cmsg" id="cMsg">📸 Press capture button below</div>
+    <div class="done-wrap" id="doneWrap">
+      <button class="done-btn" onclick="doRegister()">
+        <i class="fas fa-check-circle"></i> Complete Registration
+      </button>
+    </div>
+    <div class="proc-ov" id="procOv">
+      <div class="proc-ring"></div>
+      <div style="color:#fff;font-size:14px;font-weight:600">Saving to database...</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:4px">Please wait</div>
+    </div>
+  </div>
+
+  <!-- Bottom -->
+  <div class="cbot">
+    <div class="tstrip">
+      <div class="th cur" id="t1">1</div><div class="th" id="t2">2</div>
+      <div class="th" id="t3">3</div><div class="th" id="t4">4</div>
+      <div class="th" id="t5">5</div><div class="th" id="t6">6</div>
+      <div class="th" id="t7">7</div><div class="th" id="t8">8</div>
+      <div class="th" id="t9">9</div><div class="th" id="t10">10</div>
+    </div>
+    <button class="cap-circle" id="capBtn" onclick="doCapture()" disabled>
+      <i class="fas fa-camera"></i>
+    </button>
+    <div style="text-align:right;flex-shrink:0">
+      <div style="font-family:'Sora',sans-serif;font-size:22px;font-weight:700;color:#fff;line-height:1">
+        <span id="capN">0</span>/10
+      </div>
+      <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px" id="capLbl">samples</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- SUCCESS overlay -->
+<div class="succ-ov" id="succOv">
+  <div class="succ-card">
+    <div class="succ-ico"><i class="fas fa-check-circle"></i></div>
+    <div style="font-family:'Sora',sans-serif;font-size:20px;font-weight:800;color:#111827;margin-bottom:8px">
+      Registration Successful!
+    </div>
+    <div style="font-size:13px;color:#6B7280;margin-bottom:4px" id="sucNm"></div>
+    <div style="font-size:12px;color:#10B981;font-weight:600;margin-bottom:16px">✅ Saved in database</div>
+    <div class="prog" style="height:4px;border-radius:4px;margin-bottom:10px">
+      <div class="prog-f" id="sucBar" style="width:0%;transition:width 2.2s linear"></div>
+    </div>
+    <div style="font-size:11px;color:#9CA3AF">Redirecting to employees list...</div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const ANGLES = ['Front','Slightly Left','Slightly Right','Look Up','Look Down','Far Left','Far Right','Smile','Neutral','Eyes Wide'];
+const HINTS  = ['Look directly at camera','Turn slightly left','Turn slightly right','Tilt head up','Tilt head down','Turn further left','Turn further right','Give a smile','Neutral expression','Open eyes wide'];
+
+let stream=null, cur=1, captured=0, busy=false;
+let EMP_CODE='', EMP_NAME='';
+
+// ── SAVE & OPEN CAMERA ────────────────────────────────────────────────────────
+async function onSave() {
+  document.getElementById('errBox').style.display = 'none';
+  const code = document.getElementById('fCode').value.trim().toUpperCase();
+  const name = document.getElementById('fName').value.trim();
+
+  if (!code) { showErr('Employee code is required.'); return; }
+  if (!name) { showErr('Employee name is required.');  return; }
+
+  const btn = document.getElementById('svBtn');
+  btn.innerHTML = '<span style="width:15px;height:15px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px"></span>Validating...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/validate/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      body: JSON.stringify({ emp_code: code, employee_name: name })
+    });
+    const d = await res.json();
+
+    if (!d.ok) {
+      showErr(d.msg || 'Validation failed.');
+      btn.innerHTML = '<i class="fas fa-camera"></i> Save & Start Camera';
+      btn.disabled = false;
+      return;
+    }
+
+    EMP_CODE = code;
+    EMP_NAME = name;
+
+    // Fill top bar
+    document.getElementById('empAva').textContent = name[0].toUpperCase();
+    document.getElementById('empNm').textContent  = name;
+    document.getElementById('empCd').textContent  = code;
+
+    // Show overlay
+    document.getElementById('camOv').classList.add('show');
+    await startCam();
+
+  } catch (e) {
+    showErr('Error: ' + e.message);
+    btn.innerHTML = '<i class="fas fa-camera"></i> Save & Start Camera';
+    btn.disabled = false;
+  }
+}
+
+function showErr(msg) {
+  const b = document.getElementById('errBox');
+  b.style.display = 'flex';
+  document.getElementById('errMsg').textContent = msg;
+  b.style.animation = 'none';
+  b.offsetHeight;
+  b.style.animation = 'shake .3s ease';
+}
+
+// ── CAMERA ────────────────────────────────────────────────────────────────────
+async function startCam() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { width:{ideal:1280}, height:{ideal:720}, facingMode:'user' }
+    });
+    const v = document.getElementById('cVid');
+    v.srcObject = stream; v.style.display = 'block';
+    document.getElementById('cHud').textContent   = '● Camera Live';
+    document.getElementById('cHud').style.color   = '#34D399';
+    document.getElementById('capBtn').disabled    = false;
+    setAngle(1);
+  } catch(e) {
+    document.getElementById('cHud').textContent = '❌ ' + e.message;
+    document.getElementById('cHud').style.color = '#F87171';
+  }
+}
+
+function stopCam() {
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+}
+
+function onCancel() {
+  stopCam();
+  document.getElementById('camOv').classList.remove('show');
+  document.getElementById('svBtn').innerHTML = '<i class="fas fa-camera"></i> Save & Start Camera';
+  document.getElementById('svBtn').disabled  = false;
+  resetState();
+}
+
+function resetState() {
+  cur=1; captured=0; busy=false;
+  for (let i=1;i<=10;i++) {
+    const t = document.getElementById('t'+i);
+    t.className = 'th' + (i===1?' cur':'');
+    t.innerHTML = String(i);
+  }
+  document.getElementById('capN').textContent    = '0';
+  document.getElementById('capLbl').textContent  = 'samples';
+  document.getElementById('capBtn').disabled     = true;
+  document.getElementById('capBtn').style.display = 'flex';
+  document.getElementById('doneWrap').style.display = 'none';
+  document.getElementById('cMsg').style.display  = 'block';
+  document.getElementById('cMsg').textContent    = '📸 Press capture button below';
+  document.getElementById('scanLine').style.display = 'block';
+  setAngle(1);
+}
+
+function setAngle(n) {
+  document.getElementById('angN').textContent = (ANGLES[n-1]||'').toUpperCase();
+  document.getElementById('angH').textContent = HINTS[n-1] || '';
+}
+
+function flash() {
+  const f = document.getElementById('cFlash');
+  f.style.opacity = '.7';
+  setTimeout(() => f.style.opacity = '0', 80);
+}
+
+// ── CAPTURE ───────────────────────────────────────────────────────────────────
+async function doCapture() {
+  if (!stream || busy || cur > 10) return;
+  busy = true;
+  document.getElementById('capBtn').disabled = true;
+  flash();
+
+  const v = document.getElementById('cVid'), c = document.getElementById('cCan');
+  c.width=v.videoWidth||640; c.height=v.videoHeight||480;
+  const ctx = c.getContext('2d');
+  ctx.save(); ctx.scale(-1,1); ctx.drawImage(v,-c.width,0,c.width,c.height); ctx.restore();
+  const img = c.toDataURL('image/jpeg', .9);
+
+  try {
+    const res = await fetch('/api/capture-temp/', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'X-CSRFToken':getCookie('csrftoken') },
+      body: JSON.stringify({ image: img, num: cur })
+    });
+    const d = await res.json();
+
+    if (d.ok) {
+      // Update thumbnail
+      const th = document.getElementById('t' + cur);
+      th.innerHTML = `<img src="${img}">`;
+      th.classList.remove('cur'); th.classList.add('done', 'pop');
+      setTimeout(() => th.classList.remove('pop'), 400);
+
+      captured++; cur++;
+      document.getElementById('capN').textContent = captured;
+
+      if (cur <= 10) {
+        document.getElementById('t' + cur).classList.add('cur');
+        setAngle(cur);
+        document.getElementById('capLbl').textContent = (10-captured)+' more';
+        document.getElementById('cMsg').textContent   = '✅ ' + captured + ' done — ' + (10-captured) + ' more to go';
+        setTimeout(() => { document.getElementById('capBtn').disabled=false; busy=false; }, 450);
+      } else {
+        // All 10 done — AUTO save, no button
+        stopCam();
+        document.getElementById('capBtn').style.display   = 'none';
+        document.getElementById('cMsg').style.display     = 'none';
+        document.getElementById('scanLine').style.display = 'none';
+        document.getElementById('cHud').textContent       = '✅ Saving...';
+        document.getElementById('cHud').style.color       = '#34D399';
+        busy = false;
+        doRegister();
+      }
+    } else {
+      document.getElementById('cMsg').textContent = '⚠️ ' + (d.msg || 'Retry — check lighting');
+      document.getElementById('capBtn').disabled = false;
+      busy = false;
+    }
+  } catch(e) {
+    document.getElementById('cMsg').textContent = '⚠️ Error: ' + e.message;
+    document.getElementById('capBtn').disabled = false;
+    busy = false;
+  }
+}
+
+// ── REGISTER — SAVE TO DB ─────────────────────────────────────────────────────
+async function doRegister() {
+  document.getElementById('doneWrap').style.display = 'none';
+  document.getElementById('procOv').classList.add('on');
+
+  try {
+    const res = await fetch('/api/register-final/', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'X-CSRFToken':getCookie('csrftoken') },
+      body: JSON.stringify({})
+    });
+    const d = await res.json();
+    document.getElementById('procOv').classList.remove('on');
+
+    if (d.ok) {
+      document.getElementById('camOv').classList.remove('show');
+      document.getElementById('sucNm').textContent    = EMP_NAME + ' (' + EMP_CODE + ')';
+      document.getElementById('succOv').style.display = 'flex';
+      setTimeout(() => document.getElementById('sucBar').style.width = '100%', 50);
+      setTimeout(() => location.href = '/employees/', 1800);
+    } else {
+      document.getElementById('doneWrap').style.display = 'block';
+      toast(d.msg || 'Registration failed', 'error');
+    }
+  } catch(e) {
+    document.getElementById('procOv').classList.remove('on');
+    document.getElementById('doneWrap').style.display = 'block';
+    toast('Error: ' + e.message, 'error');
+  }
+}
+</script>
+{% endblock %}

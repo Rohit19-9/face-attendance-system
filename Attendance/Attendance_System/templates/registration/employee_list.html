@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Employees{% endblock %}
+{% block page_title %}My Employees{% endblock %}
+{% block page_sub %}{{ user.username }}'s employee list{% endblock %}
+{% block ne %}active{% endblock %}
+{% block content %}
+<div class="sh" style="margin-bottom:18px">
+  <form method="get" style="display:flex;gap:9px;flex-wrap:wrap">
+    <div style="position:relative">
+      <i class="fas fa-search" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#9CA3AF;font-size:12px"></i>
+      <input type="text" name="q" class="fc" placeholder="Search code or name..." value="{{ q }}" style="padding-left:34px;width:240px">
+    </div>
+    <button type="submit" class="btn btn-out"><i class="fas fa-search"></i> Search</button>
+    {% if q %}<a href="{% url 'employee_list' %}" class="btn btn-out"><i class="fas fa-times"></i></a>{% endif %}
+  </form>
+  <a href="{% url 'add_employee' %}" class="btn btn-blue"><i class="fas fa-user-plus"></i> Add Employee</a>
+</div>
+
+<div class="card" style="overflow:hidden;padding:0">
+  <div class="tw">
+    <table class="t">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Face Status</th>
+          <th>Samples</th>
+          <th>Added</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for emp in employees %}
+        <tr>
+          <td style="color:#9CA3AF;font-size:12px">{{ forloop.counter }}</td>
+          <td>
+            <span style="background:#EFF6FF;color:#1E40AF;padding:3px 10px;border-radius:6px;font-size:12.5px;font-weight:700">
+              {{ emp.emp_code }}
+            </span>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:9px">
+              <div class="ava">{{ emp.employee_name|slice:":1"|upper }}</div>
+              <span style="font-weight:600;color:#111827">{{ emp.employee_name }}</span>
+            </div>
+          </td>
+          <td>
+            {% if emp.is_face_registered %}
+              <span class="badge b-reg"><i class="fas fa-check-circle"></i> Registered</span>
+            {% else %}
+              <span class="badge b-pend"><i class="fas fa-clock"></i> Pending</span>
+            {% endif %}
+          </td>
+          <td style="font-size:13px;color:#6B7280">{{ emp.face_samples_count }}/10</td>
+          <td style="font-size:12px;color:#9CA3AF">{{ emp.created_at|date:"d M Y" }}</td>
+          <td>
+            {% if not emp.is_face_registered %}
+              <!-- Only show Register button if NOT yet registered — no re-register -->
+              <a href="{% url 'register_face' emp.id %}" class="btn btn-blue btn-sm">
+                <i class="fas fa-camera"></i> Register Face
+              </a>
+            {% else %}
+              <!-- Registered: no action button -->
+              <span style="font-size:12px;color:#9CA3AF;font-style:italic">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" style="text-align:center;padding:44px;color:#9CA3AF">
+            <i class="fas fa-users" style="font-size:32px;display:block;margin-bottom:10px;opacity:.25"></i>
+            No employees yet. <a href="{% url 'add_employee' %}" style="color:#3B82F6;font-weight:600">Add first employee</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

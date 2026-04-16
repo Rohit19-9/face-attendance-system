@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Attendance System — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;background:#F9FAFB}
+.left{flex:1;background:linear-gradient(145deg,#2563EB 0%,#7C3AED 55%,#DB2777 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;position:relative;overflow:hidden}
+.left::before{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.07) 1px,transparent 1px);background-size:28px 28px}
+.brand{width:90px;height:90px;background:rgba(255,255,255,.15);border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:40px;color:#fff;margin-bottom:22px;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.2)}
+.bname{font-family:'Sora',sans-serif;font-size:30px;font-weight:800;color:#fff;margin-bottom:6px}
+.btag{font-size:13.5px;color:rgba(255,255,255,.7);margin-bottom:40px}
+.feats{display:flex;flex-direction:column;gap:10px;width:100%;max-width:310px}
+.feat{background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);border-radius:11px;padding:13px 16px;display:flex;align-items:center;gap:11px;color:#fff}
+.fic{width:36px;height:36px;background:rgba(255,255,255,.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.ft{font-size:13px;font-weight:600}.fd{font-size:11px;opacity:.65;margin-top:2px}
+
+.right{width:430px;display:flex;flex-direction:column;justify-content:center;padding:56px 46px;background:#fff}
+.rtag{display:inline-flex;align-items:center;gap:6px;background:#ECFDF5;color:#065F46;padding:4px 12px;border-radius:99px;font-size:11.5px;font-weight:600;margin-bottom:20px}
+.rdot{width:6px;height:6px;background:#10B981;border-radius:50%;animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.rtitle{font-family:'Sora',sans-serif;font-size:24px;font-weight:800;color:#111827;margin-bottom:5px}
+.rsub{font-size:13px;color:#6B7280;margin-bottom:26px}
+.fg{margin-bottom:15px}
+.fl{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px}
+.iw{position:relative}
+.iw .ic{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#9CA3AF;font-size:13px;pointer-events:none;transition:color .15s}
+.fc{width:100%;border:1.5px solid #E5E7EB;border-radius:8px;padding:11px 13px 11px 36px;font-family:'Inter',sans-serif;font-size:13.5px;color:#111827;outline:none;transition:all .15s;background:#F9FAFB}
+.fc:focus{border-color:#3B82F6;box-shadow:0 0 0 3px rgba(59,130,246,.1);background:#fff}
+.fc:focus~.ic,.iw:focus-within .ic{color:#3B82F6}
+.eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#9CA3AF;cursor:pointer;font-size:13px;padding:4px;transition:color .15s}
+.eye:hover{color:#3B82F6}
+.err{background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:10px 13px;font-size:12.5px;color:#991B1B;display:flex;align-items:center;gap:7px;margin-bottom:14px;font-weight:500}
+.btnl{width:100%;background:linear-gradient(135deg,#3B82F6,#8B5CF6);color:#fff;border:none;border-radius:9px;padding:12px;font-family:'Sora',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .25s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:4px}
+.btnl:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(59,130,246,.4)}
+.note{margin-top:18px;padding:12px 14px;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;font-size:12px;color:#6B7280}
+.note strong{color:#374151}
+.foot{margin-top:24px;text-align:center;font-size:11.5px;color:#9CA3AF}
+@media(max-width:820px){.left{display:none}.right{width:100%;padding:36px 24px}}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="left">
+  <div class="brand"><i class="fas fa-eye"></i></div>
+  <div class="bname">Attendance System</div>
+  <div class="btag">AI-Powered Attendance System</div>
+  <div class="feats">
+    <div class="feat"><div class="fic"><i class="fas fa-users"></i></div><div><div class="ft">Multi-User Support</div><div class="fd">Each user manages own employees</div></div></div>
+    <div class="feat"><div class="fic"><i class="fas fa-shield-alt"></i></div><div><div class="ft">Anti-Spoofing</div><div class="fd">Blocks photos, screens, videos</div></div></div>
+    <div class="feat"><div class="fic"><i class="fas fa-bolt"></i></div><div><div class="ft">Real-time Processing</div><div class="fd">Fast recognition under 2 seconds</div></div></div>
+  </div>
+</div>
+<div class="right">
+  <div class="rtag"><div class="rdot"></div>System Online</div>
+  <div class="rtitle">Welcome Back!</div>
+  <div class="rsub">Sign in to your Attendance System account</div>
+  {% if messages %}{% for m in messages %}<div class="err"><i class="fas fa-exclamation-triangle"></i>{{ m }}</div>{% endfor %}{% endif %}
+  <form method="post" id="lf">{% csrf_token %}
+    <div class="fg"><label class="fl">Username</label>
+      <div class="iw"><input type="text" name="username" class="fc" placeholder="Enter username" value="{{ request.POST.username }}" required><i class="fas fa-user ic"></i></div>
+    </div>
+    <div class="fg"><label class="fl">Password</label>
+      <div class="iw"><input type="password" name="password" id="pwd" class="fc" placeholder="Enter password" required><i class="fas fa-lock ic"></i>
+      <button type="button" class="eye" onclick="tp()"><i class="fas fa-eye" id="ei"></i></button></div>
+    </div>
+    <button type="submit" class="btnl" id="lb"><i class="fas fa-sign-in-alt"></i> Sign In</button>
+  </form>
+  <div class="note">
+    <strong>Note:</strong> Each user account manages their own employees separately. Same employee code can exist in different user accounts.
+  </div>
+  <div class="foot">Attendance System &copy; 2026 &nbsp;</div>
+</div>
+<script>
+function tp(){const i=document.getElementById('pwd'),e=document.getElementById('ei');i.type=i.type==='password'?'text':'password';e.className=i.type==='password'?'fas fa-eye':'fas fa-eye-slash'}
+document.getElementById('lf').addEventListener('submit',function(){const b=document.getElementById('lb');b.innerHTML='<span style="width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block"></span> Signing in...';b.disabled=true});
+</script>
+</body>
+</html>
